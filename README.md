@@ -64,6 +64,3 @@ Este proyecto está bajo licencia **MIT**
 
 ## Contribuciones
 Pull requests y mejoras son bienvenidas
-
-## Documentación de la API
-Consulta https://github.com/obsidianmd/obsidian-api
