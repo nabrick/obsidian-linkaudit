@@ -3,7 +3,7 @@
 ![Status](https://img.shields.io/badge/status-active-lightgrey.svg)
 
 # LinkAudit for Obsidian
-Audita enlaces internos y detecta carpetas vacías dentro de tu vault de Obsidian. Ideal para mantener tu sistema limpio, organizado y sin notas huérfanas.
+Plugin para Obsidian que detecta archivos huérfanos y carpetas vacías en tu vault.
 
 ## Características
 - Identifica archivos **sin ninguna referencia interna**
