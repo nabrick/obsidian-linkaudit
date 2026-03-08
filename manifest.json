@@ -3,7 +3,7 @@
     "name": "LinkAudit",
     "version": "1.1.0",
     "minAppVersion": "0.12.0",
-    "description": "Audita enlaces internos y carpetas vacías en tu Vault de Obsidian",
+    "description": "Audita enlaces internos y carpetas vacías en tu Vault.",
     "author": "Nabrick",
     "main": "main.js"
 }
