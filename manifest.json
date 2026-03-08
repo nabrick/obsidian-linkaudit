@@ -1,7 +1,7 @@
 {
     "id": "LinkAudit-plugin",
     "name": "LinkAudit",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "minAppVersion": "0.12.0",
     "description": "Audita enlaces internos y carpetas vacías en tu Vault de Obsidian",
     "author": "Nabrick",

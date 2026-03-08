@@ -9,7 +9,6 @@ module.exports = class LinkAuditPlugin extends Plugin {
   async onload() {
     await this.loadSettings();
 
-    //console.log('Plugin LinkAudit desactivado')
     new Notice("Plugin LinkAudit activado");
 
     this.registerView(
@@ -22,18 +21,48 @@ module.exports = class LinkAuditPlugin extends Plugin {
       (leaf) => new FoldersAuditView(leaf, this)
     );
 
+    this.addCommand({
+      id: "open-link-audit",
+      name: "Auditar archivos sin referencias",
+      callback: () => {
+        const folder = this.settings.lastSelectedFolder;
+        if (folder) {
+          this.openAuditView(folder);
+        } else {
+          new Notice("Selecciona una carpeta primero en Settings → LinkAudit.");
+        }
+      }
+    });
+
+    this.addCommand({
+      id: "open-folders-audit",
+      name: "Auditar carpetas vacías",
+      callback: () => this.openEmptyFolderAuditView()
+    });
+
+    this.addRibbonIcon("link", "LinkAudit – Archivos sin referencias", () => {
+      const folder = this.settings.lastSelectedFolder;
+      if (folder) {
+        this.openAuditView(folder);
+      } else {
+        new Notice("Selecciona una carpeta primero en Settings → LinkAudit.");
+      }
+    });
+
     this.addSettingTab(new LinkAuditSettingTab(this.app, this));
   }
 
   async onunload() {
-    //console.log('Plugin LinkAudit desactivado')
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_LINK_AUDIT);
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_LINK_FOLDERS);
     new Notice("Plugin LinkAudit desactivado");
   }
 
   async loadSettings() {
-    this.settings = Object.assign({ showReferenced: false }, await this.loadData());
+    this.settings = Object.assign(
+      { showReferenced: false, lastSelectedFolder: "" },
+      await this.loadData()
+    );
   }
 
   async saveSettings() {
@@ -57,11 +86,11 @@ module.exports = class LinkAuditPlugin extends Plugin {
       .filter(f => f.path.startsWith(targetFolder + "/"))
       .filter(f => f.name !== "Tasks.md")
       .filter(f => !f.name.includes(".highlights"));
-    
+
     const allMarkdownFiles = this.app.vault.getMarkdownFiles()
       .filter(f => f.name !== "Tasks.md")
       .filter(f => !f.name.includes(".highlights"));
-    
+
     const allCached = allMarkdownFiles
       .map(f => this.app.metadataCache.getFileCache(f))
       .filter(Boolean);
@@ -99,9 +128,7 @@ module.exports = class LinkAuditPlugin extends Plugin {
         file.path.replace(/\\/g, "/"),
       ]);
 
-      const referenced = [...variants].some(variant =>
-        allLinks.has(variant)
-      );
+      const referenced = [...variants].some(variant => allLinks.has(variant));
 
       if (!referenced) {
         orphanFiles.push(file);
@@ -120,25 +147,32 @@ module.exports = class LinkAuditPlugin extends Plugin {
   async getEmptyFolders() {
     const emptyFolders = [];
 
-    const visitFolder = (folder) => {
+    const isFolderEmpty = (folder) => {
       const children = folder.children;
-
       const hasFiles = children.some(child => child instanceof TFile);
-      const hasSubfolders = children.some(child => child instanceof TFolder);
+      if (hasFiles) return false;
+      const subfolders = children.filter(child => child instanceof TFolder);
+      return subfolders.every(sub => isFolderEmpty(sub));
+    };
 
-      if (!hasFiles && !hasSubfolders) {
+    const visitFolder = (folder) => {
+      if (isFolderEmpty(folder)) {
         emptyFolders.push(folder.path);
-      }
-
-      for (const child of children) {
-        if (child instanceof TFolder) {
-          visitFolder(child);
+      } else {
+        for (const child of folder.children) {
+          if (child instanceof TFolder) {
+            visitFolder(child);
+          }
         }
       }
     };
 
     const root = this.app.vault.getRoot();
-    visitFolder(root);
+    for (const child of root.children) {
+      if (child instanceof TFolder) {
+        visitFolder(child);
+      }
+    }
 
     return emptyFolders.sort();
   }
@@ -150,6 +184,10 @@ module.exports = class LinkAuditPlugin extends Plugin {
     }
 
     this.lastSelectedFolder = folderPath;
+
+    this.settings.lastSelectedFolder = folderPath;
+    await this.saveSettings();
+
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_LINK_AUDIT);
 
     const leaf = this.app.workspace.getRightLeaf(false);
@@ -162,7 +200,7 @@ module.exports = class LinkAuditPlugin extends Plugin {
     this.app.workspace.revealLeaf(leaf);
   }
 
-    async openEmptyFolderAuditView() {
+  async openEmptyFolderAuditView() {
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_LINK_FOLDERS);
 
     const leaf = this.app.workspace.getRightLeaf(false);
@@ -226,10 +264,7 @@ class LinkAuditView extends ItemView {
       const list = container.createEl("ul");
       orphanFiles.forEach(file => {
         const item = list.createEl("li");
-        const link = item.createEl("a", {
-          text: file.path,
-          href: "#"
-        });
+        const link = item.createEl("a", { text: file.path, href: "#" });
         link.addEventListener("click", (e) => {
           e.preventDefault();
           this.app.workspace.openLinkText(file.path, "", false);
@@ -237,26 +272,23 @@ class LinkAuditView extends ItemView {
       });
     }
 
-    if ((this.plugin.settings?.showReferenced ?? false) && referencedFiles.length > 0) {
+    if (this.plugin.settings.showReferenced && referencedFiles.length > 0) {
       container.createEl("p", { text: `${referencedFiles.length} archivo(s) con referencias encontradas:` });
 
       const refList = container.createEl("ul");
       referencedFiles.forEach(file => {
         const item = refList.createEl("li");
-        const link = item.createEl("a", {
-          text: file.path,
-          href: "#"
-        });
+        const link = item.createEl("a", { text: file.path, href: "#" });
         link.addEventListener("click", (e) => {
           e.preventDefault();
           this.app.workspace.openLinkText(file.path, "", false);
         });
       });
-    }    
+    }
   }
 
   onClose() {
-    this.containerEl.empty();
+    this.containerEl.children[1].empty();
   }
 }
 
@@ -320,7 +352,7 @@ class FoldersAuditView extends ItemView {
   }
 
   onClose() {
-    this.containerEl.empty();
+    this.containerEl.children[1].empty();
   }
 }
 
@@ -337,7 +369,8 @@ class LinkAuditSettingTab extends PluginSettingTab {
     containerEl.createEl("h2", { text: "LinkAudit – Opciones de Auditoría" });
 
     const folders = await this.plugin.getFolderPaths();
-    let selectedFolder = folders[0] ?? "";
+
+    let selectedFolder = this.plugin.settings.lastSelectedFolder || folders[0] || "";
 
     new Setting(containerEl)
       .setName("Carpeta a revisar")
@@ -362,21 +395,21 @@ class LinkAuditSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-    .setName("Mostrar archivos con referencias")
-    .setDesc("Si se activa, también se mostrarán los archivos referenciados.")
-    .addToggle(toggle =>
-      toggle
-        .setValue(this.plugin.settings?.showReferenced ?? false)
-        .onChange(async (value) => {
-          this.plugin.settings.showReferenced = value;
-          await this.plugin.saveSettings();
+      .setName("Mostrar archivos con referencias")
+      .setDesc("Si se activa, también se mostrarán los archivos referenciados.")
+      .addToggle(toggle =>
+        toggle
+          .setValue(this.plugin.settings.showReferenced)
+          .onChange(async (value) => {
+            this.plugin.settings.showReferenced = value;
+            await this.plugin.saveSettings();
 
-          const leaves = this.app.workspace.getLeavesOfType("link-audit-view");
-          if (leaves.length > 0) {
-            await leaves[0].view.onOpen();
-          }
-        })
-    );
+            const leaves = this.app.workspace.getLeavesOfType("link-audit-view");
+            if (leaves.length > 0) {
+              await leaves[0].view.onOpen();
+            }
+          })
+      );
 
     new Setting(containerEl)
       .setName("Revisar carpetas")

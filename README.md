@@ -1,11 +1,8 @@
-![Version](https://img.shields.io/badge/version-1.0.1-lightgrey.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-lightgrey.svg)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)
 ![Status](https://img.shields.io/badge/status-active-lightgrey.svg)
 
 # LinkAudit for Obsidian
-
-Este es un plugin de muestra para Obsidian https://obsidian.md
-
 Audita enlaces internos y detecta carpetas vacías dentro de tu vault de Obsidian. Ideal para mantener tu sistema limpio, organizado y sin notas huérfanas.
 
 ## Características
@@ -38,8 +35,8 @@ Audita enlaces internos y detecta carpetas vacías dentro de tu vault de Obsidia
 
 ### Opciones disponibles
 
-| Opción | Función |
-|-------|--------|
+| Opción  | Función  |
+| ------- | -------- |
 | Mostrar archivos referenciados | Lista también los archivos que sí tienen enlaces |
 | Verificar carpetas vacías | Encuentra carpetas sin archivos Markdown |
 
